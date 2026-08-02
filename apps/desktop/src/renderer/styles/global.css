@@ -353,11 +353,22 @@ button {
   border-radius: 10px;
   padding: 0.55rem 0.9rem;
   font-weight: 600;
-  transition: background 120ms ease, transform 120ms ease;
+  transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease,
+    border-color 120ms ease, opacity 120ms ease;
 }
 
-.btn:hover {
+.btn:hover:not(:disabled) {
   background: #f7f5ef;
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn:focus-visible {
@@ -371,7 +382,7 @@ button {
   color: #fff;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--teal-deep);
 }
 
@@ -384,8 +395,12 @@ button {
   animation: pulseSoft 2.4s ease infinite;
 }
 
-.btn-yes:hover {
+.btn-yes:hover:not(:disabled) {
   background: var(--amber-deep);
+}
+
+.btn-yes:disabled {
+  animation: none;
 }
 
 .review-layout {
