@@ -1,0 +1,84 @@
+{
+  "name": "@mattermail/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MatterMail Review desktop application",
+  "main": "out/main/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "dist:win": "electron-vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win portable --x64 -c.win.signAndEditExecutable=false",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:e2e": "playwright test",
+    "preview": "electron-vite preview",
+    "postinstall": "electron-builder install-app-deps || true"
+  },
+  "dependencies": {
+    "@mattermail/ai-anthropic": "workspace:*",
+    "@mattermail/ai-azure-openai": "workspace:*",
+    "@mattermail/ai-core": "workspace:*",
+    "@mattermail/ai-gemini": "workspace:*",
+    "@mattermail/ai-mistral": "workspace:*",
+    "@mattermail/ai-ollama": "workspace:*",
+    "@mattermail/ai-openai": "workspace:*",
+    "@mattermail/ai-openai-compatible": "workspace:*",
+    "@mattermail/ai-openrouter": "workspace:*",
+    "@mattermail/ai-xai": "workspace:*",
+    "@mattermail/clio": "workspace:*",
+    "@mattermail/database": "workspace:*",
+    "@mattermail/domain": "workspace:*",
+    "@mattermail/drive": "workspace:*",
+    "@mattermail/extraction": "workspace:*",
+    "@mattermail/gmail": "workspace:*",
+    "@mattermail/learning": "workspace:*",
+    "@mattermail/matching": "workspace:*",
+    "@mattermail/quest-email": "workspace:*",
+    "@mattermail/reporting": "workspace:*",
+    "@mattermail/security": "workspace:*",
+    "@mattermail/shared": "workspace:*",
+    "@tanstack/react-query": "^5.67.2",
+    "better-sqlite3": "^11.10.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.2",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
+    "@playwright/test": "^1.51.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^35.0.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^3.0.0",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.1"
+  },
+  "build": {
+    "appId": "com.mattermail.review",
+    "productName": "MatterMail Review",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "artifactName": "MatterMailReview-${version}-${os}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "author": "MatterMail Review"
+}

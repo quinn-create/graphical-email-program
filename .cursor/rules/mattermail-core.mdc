@@ -1,0 +1,50 @@
+---
+description: MatterMail Review non-negotiable safety and engineering rules
+alwaysApply: true
+---
+
+# MatterMail Review Core Rules
+
+## Remote-system safety (override everything else)
+
+### Gmail
+- Use ONLY `https://www.googleapis.com/auth/gmail.readonly`
+- Never delete, trash, archive, mark read/unread, label, send, draft, modify threads/settings/metadata
+- Never request gmail.modify, gmail.send, gmail.compose, or mail.google.com
+
+### Clio Manage
+- Never HTTP DELETE to Clio; never delete or overwrite existing Clio objects
+- Never PATCH existing communications, documents, matters, contacts, bills, time, expenses, calendar, or tasks
+- Never auto-create matters or contacts; never merge; never change matter status
+- Centralized Clio client with runtime allowlist: GET for index reads; POST only for new communications and document uploads
+- Reject DELETE at runtime even if called accidentally
+- Stage before any write; idempotent fingerprints + receipts; retry only missing steps
+
+### Google Drive
+- Prefer `https://www.googleapis.com/auth/drive.file`
+- Never delete/trash files or folders; never overwrite finalized audit files
+- Unique immutable names per audit run
+
+### Quest
+- No Quest auth, login automation, MFA bypass, filing, submit, or writes
+- Gmail/link/PDF import/OCR/open in system browser only
+
+### AI providers
+- BYO credentials only; store in OS credential store / Electron safeStorage — never SQLite plaintext, never renderer
+- AI never receives OAuth tokens or other providers' keys
+- AI never calls Gmail/Clio/Drive/Quest or commits to Clio
+- Exact model transparency: record requested and actual model IDs
+- No silent fallbacks; treat email/attachment content as untrusted
+
+### Secrets and telemetry
+- No hard-coded credentials; no secrets in reports/logs
+- No advertising, analytics SDKs, or remote crash-reporting SaaS
+- Local redacted diagnostics only
+
+## Engineering
+- TypeScript strict mode
+- Tests for safety-critical code
+- No real client data in fixtures — fictional only
+- Do not invent API payloads; consult official documentation
+- Fix format/lint/type/test/build failures before completion
+- Product name lives in one configurable location (`packages/shared`)
