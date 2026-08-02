@@ -171,13 +171,15 @@ describe("drive", () => {
       content: "{}",
     });
     expect(f.id).toBeTruthy();
-    await expect(
-      drive.uploadAuditFile({
-        runId: "COMMIT-CLIO-2026-08-02-001",
-        filename: "COMMIT-CLIO-2026-08-02-001_Manifest.json",
-        content: "{}",
-      }),
-    ).rejects.toThrow();
+    // Idempotent retry returns the existing file — never overwrites content
+    const again = await drive.uploadAuditFile({
+      runId: "COMMIT-CLIO-2026-08-02-001",
+      filename: "COMMIT-CLIO-2026-08-02-001_Manifest.json",
+      content: "{changed}",
+    });
+    expect(again.id).toBe(f.id);
+    expect(again.alreadyExisted).toBe(true);
+    expect(again.checksum).toBe(f.checksum);
   });
 });
 

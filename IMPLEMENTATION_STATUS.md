@@ -13,18 +13,21 @@ Updated: 2026-08-02
 - Rapid Review three-panel UI with mouse-first action bar
 - Nine AI provider packages with mock adapters + exact model transparency
 - Matching engine (case-relatedness vs matter identity) + safe learning rules
-- Gmail/Clio/Drive/Quest mock connectors; live adapter skeletons
+- **Live Gmail / Clio / Drive OAuth** (loopback + PKCE for Google; secrets via Electron safeStorage; Demo until connected)
+- **Smarter Rapid Review defaults** (HIGH confidence first, one-line why, auto-select best next)
+- **Commit preflight / duplicate warnings / partial-failure retry** (receipts persisted to SQLite)
 - Audit PDF / XLSX / JSON generation
 - `pnpm safety-check` (passes)
-- Unit/integration tests (25 passing)
+- Unit/integration tests (33 passing)
 - Production Electron build
 - Windows portable installer: `apps/desktop/release/MatterMailReview-0.1.0-win-x64.exe`
 - Documentation under `docs/`
 
 ## Credentials still needed for live connectors
 
-- Google OAuth client (Gmail `readonly` + Drive `file`)
-- Clio Manage private app OAuth + region
+- Google OAuth client (Gmail `readonly` + Drive `file`) — paste Client ID/Secret in Settings → Connectors
+- Clio Manage private app OAuth + region — paste Client ID/Secret in Settings
+- Drive audit folder ID (app-created folder under `drive.file` scope)
 - User-supplied AI API keys (BYO)
 
 ## Remaining non-core enhancements

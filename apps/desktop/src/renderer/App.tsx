@@ -3,6 +3,8 @@ import { ReviewActionBar, type ReviewBarAction } from "./components/ReviewAction
 import { HomePage } from "./components/HomePage";
 import { QueueRow } from "./components/QueueRow";
 import { MatterProposal } from "./components/MatterProposal";
+import { ConnectorsPanel } from "./components/ConnectorsPanel";
+import { StagedCommitPanel } from "./components/StagedCommitPanel";
 
 type Page = "home" | "review" | "staged" | "rules" | "settings" | "setup";
 
@@ -22,8 +24,18 @@ type ReviewItem = {
   caseRelatedness: string;
   reviewStatus: string;
   evidence: string[];
+  whyLine?: string;
   aiBadge: { provider: string; model: string };
   threadId: string;
+};
+
+type ConnectorStatus = {
+  id: string;
+  label: string;
+  connected: boolean;
+  mode: "mock" | "live";
+  accountLabel: string | null;
+  detail: string;
 };
 
 type Matter = {
@@ -49,6 +61,22 @@ const PROVIDERS = [
   "Ollama",
 ];
 
+const CONF_RANK: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2, NONE: 3 };
+
+function pickBestNext(list: ReviewItem[], excludeId?: string): ReviewItem | null {
+  const open = list.filter(
+    (i) => i.reviewStatus === "unreviewed" && i.id !== excludeId,
+  );
+  if (open.length === 0) return null;
+  return [...open].sort((a, b) => {
+    const ca = CONF_RANK[a.confidence] ?? 9;
+    const cb = CONF_RANK[b.confidence] ?? 9;
+    if (ca !== cb) return ca - cb;
+    if (Boolean(a.isQuest) !== Boolean(b.isQuest)) return a.isQuest ? -1 : 1;
+    return 0;
+  })[0]!;
+}
+
 export function App() {
   const [page, setPage] = useState<Page>("setup");
   const [info, setInfo] = useState<{ product?: { name: string }; demoMode?: boolean } | null>(null);
@@ -68,6 +96,8 @@ export function App() {
   const [setupStep, setSetupStep] = useState(0);
   const [selectedProvider, setSelectedProvider] = useState(0);
   const [status, setStatus] = useState("");
+  const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
+  const [credHints, setCredHints] = useState<Record<string, string | null>>({});
   const [, startTransition] = useTransition();
 
   const selected = useMemo(
@@ -95,12 +125,24 @@ export function App() {
       setAiConfig(cfg as Record<string, unknown>);
       const ms = await window.mattermail.listModels();
       setModels(ms as typeof models);
+      await refreshConnectors();
       if ((i as { setupComplete?: boolean }).setupComplete) {
         setPage("home");
         await refreshAll();
       }
     })();
   }, []);
+
+  async function refreshConnectors() {
+    const res = (await window.mattermail.connectorsStatus()) as {
+      demoMode?: boolean;
+      connectors?: ConnectorStatus[];
+      credentials?: Record<string, string | null>;
+    };
+    setConnectors(res.connectors ?? []);
+    setCredHints(res.credentials ?? {});
+    setInfo((prev) => ({ ...(prev ?? {}), demoMode: res.demoMode ?? prev?.demoMode }));
+  }
 
   async function refreshAll() {
     const [list, mats, st, rl, cp] = await Promise.all([
@@ -110,13 +152,16 @@ export function App() {
       window.mattermail.listLearningRules(),
       window.mattermail.getCheckpoints(),
     ]);
-    setItems(list as ReviewItem[]);
+    const reviewList = list as ReviewItem[];
+    setItems(reviewList);
     setMatters(mats as Matter[]);
     setStaged(st as Array<Record<string, unknown>>);
     setRules(rl as Array<Record<string, unknown>>);
     setCheckpoints(cp);
-    if (!selectedId && (list as ReviewItem[])[0]) {
-      setSelectedId((list as ReviewItem[])[0]!.id);
+    await refreshConnectors();
+    if (!selectedId) {
+      const best = pickBestNext(reviewList);
+      if (best) setSelectedId(best.id);
     }
   }
 
@@ -146,11 +191,9 @@ export function App() {
     if (res.staged) setStaged(res.staged);
     const cp = await window.mattermail.getCheckpoints();
     setCheckpoints(cp);
-    // Advance to next unreviewed
+    // Advance to highest-confidence remaining item
     if (["approve", "choose", "unknown", "not_related", "later", "duplicate"].includes(action)) {
-      const next = (res.items ?? items).find(
-        (i) => i.id !== selected.id && i.reviewStatus === "unreviewed",
-      );
+      const next = pickBestNext(res.items ?? items, selected.id);
       if (next) {
         startTransition(() => {
           setSelectedId(next.id);
@@ -202,7 +245,10 @@ export function App() {
           {setupStep === 1 && (
             <>
               <h1>Connectors</h1>
-              <p>In Demo mode, Gmail, Clio, and Drive use mock adapters with fictional data.</p>
+              <p>
+                Demo mode is the default. You can connect live Gmail, Clio, and Drive later in
+                Settings — OAuth opens your browser; nothing is automated.
+              </p>
               <ul>
                 <li>Gmail — read-only scope only</li>
                 <li>Clio Manage — index + staged creates</li>
@@ -214,7 +260,7 @@ export function App() {
                   Back
                 </button>
                 <button className="btn btn-primary" onClick={() => setSetupStep(2)}>
-                  Continue
+                  Continue with Demo
                 </button>
               </div>
             </>
@@ -351,6 +397,7 @@ export function App() {
                       isQuest={item.isQuest}
                       confidence={item.confidence}
                       reviewStatus={item.reviewStatus}
+                      whyLine={item.whyLine ?? item.evidence[0]}
                       active={selected.id === item.id}
                       onSelect={() => {
                         setSelectedId(item.id);
@@ -492,34 +539,11 @@ export function App() {
       )}
 
       {page === "staged" && (
-        <div className="page">
-          <h2>Staged commits</h2>
-          <p className="muted">Nothing is written to Clio until you confirm.</p>
-          {staged.length === 0 && <p>No staged items.</p>}
-          {staged.map((s) => (
-            <div key={String(s.id)} className="status-card" style={{ marginBottom: 12 }}>
-              <strong>{String(s.subject)}</strong>
-              <p>Matter: {String(s.matterId)}</p>
-              <p>State: {String(s.state)}</p>
-              <p className="muted">Fingerprint: {String(s.fingerprint)}</p>
-            </div>
-          ))}
-          <button
-            className="btn btn-primary"
-            disabled={staged.length === 0}
-            onClick={() =>
-              void window.mattermail
-                .commit(staged.map((s) => String(s.id)))
-                .then(async (r) => {
-                  setStatus(JSON.stringify(r));
-                  await refreshAll();
-                })
-            }
-          >
-            Commit selected
-          </button>
-          {status && <pre className="muted">{status}</pre>}
-        </div>
+        <StagedCommitPanel
+          staged={staged}
+          onRefresh={refreshAll}
+          onStatus={setStatus}
+        />
       )}
 
       {page === "rules" && (
@@ -545,7 +569,14 @@ export function App() {
       {page === "settings" && (
         <div className="page">
           <h2>Settings</h2>
-          <section className="status-card">
+          <ConnectorsPanel
+            demoMode={Boolean(info?.demoMode)}
+            connectors={connectors}
+            credentials={credHints}
+            onRefresh={refreshConnectors}
+            onStatus={setStatus}
+          />
+          <section className="status-card" style={{ marginTop: 16 }}>
             <h2>AI models</h2>
             <p>Exact model IDs are always displayed and audited.</p>
             <label>

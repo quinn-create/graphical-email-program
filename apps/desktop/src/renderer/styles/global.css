@@ -537,6 +537,132 @@ button {
   opacity: 0.5;
 }
 
+.queue-why {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  line-height: 1.35;
+  margin: 0.15rem 0 0.05rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.connectors-panel .connector-mode-pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  margin: 0.5rem 0 1rem;
+}
+
+.connector-mode-pill.demo {
+  background: rgba(196, 122, 18, 0.16);
+  color: var(--amber-deep);
+}
+
+.connector-mode-pill.live {
+  background: rgba(31, 107, 58, 0.14);
+  color: var(--ok);
+}
+
+.connector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.connector-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.connector-card.connected {
+  border-color: rgba(11, 107, 99, 0.35);
+  background: rgba(11, 107, 99, 0.06);
+}
+
+.connector-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.connector-account {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0.35rem 0;
+}
+
+.connector-actions {
+  margin-top: 10px;
+}
+
+.cred-form {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+}
+
+.cred-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.staged-item {
+  margin-bottom: 12px;
+}
+
+.staged-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.warn-line {
+  color: var(--amber-deep) !important;
+  font-size: 0.9rem;
+}
+
+.preflight-card {
+  margin: 16px 0;
+}
+
+.preflight-issues {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+}
+
+.preflight-issues .sev-block {
+  color: var(--danger);
+}
+
+.preflight-issues .sev-warn {
+  color: var(--amber-deep);
+}
+
+.preflight-issues .sev-info {
+  color: var(--ink-soft);
+}
+
+.confirm-commit {
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .connector-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .preview {
   padding: 1rem;
   overflow: auto;

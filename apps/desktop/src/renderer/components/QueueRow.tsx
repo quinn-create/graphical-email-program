@@ -4,6 +4,7 @@ type Props = {
   isQuest: boolean;
   confidence: string;
   reviewStatus: string;
+  whyLine?: string;
   active: boolean;
   onSelect: () => void;
 };
@@ -43,6 +44,7 @@ export function QueueRow({
   isQuest,
   confidence,
   reviewStatus,
+  whyLine,
   active,
   onSelect,
 }: Props) {
@@ -60,6 +62,7 @@ export function QueueRow({
           <span className="subject">{subject}</span>
           <span className={`queue-confidence tag ${conf}`}>{confidence}</span>
         </span>
+        {whyLine ? <span className="queue-why">{whyLine}</span> : null}
         <span className="meta">
           <span className="queue-sender">{fromName}</span>
           <span className="queue-dot" aria-hidden>
