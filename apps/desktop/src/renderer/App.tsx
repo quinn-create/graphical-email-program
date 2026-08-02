@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { ReviewActionBar, type ReviewBarAction } from "./components/ReviewActionBar";
+import { HomePage } from "./components/HomePage";
+import { QueueRow } from "./components/QueueRow";
+import { MatterProposal } from "./components/MatterProposal";
 
 type Page = "home" | "review" | "staged" | "rules" | "settings" | "setup";
 
@@ -315,83 +318,22 @@ export function App() {
       </header>
 
       {page === "home" && (
-        <div className="page">
-          <div className="home-grid">
-            <section className="status-card">
-              <h2>Gmail</h2>
-              <p>Last scan: {String(checkpoints.lastGmailDownload ?? "—")}</p>
-              <p>Unreviewed: {items.filter((i) => i.reviewStatus === "unreviewed").length}</p>
-              <div className="actions">
-                {["24h", "72h", "7d", "custom", "since-last"].map((w) => (
-                  <button
-                    key={w}
-                    className="btn"
-                    onClick={() => void window.mattermail.scanGmail(w).then(() => refreshAll())}
-                  >
-                    {w}
-                  </button>
-                ))}
-              </div>
-            </section>
-            <section className="status-card">
-              <h2>Quest emails</h2>
-              <p>Last scanned: {String(checkpoints.lastQuestEmailScan ?? "—")}</p>
-              <p>Waiting: {items.filter((i) => i.isQuest).length}</p>
-              <div className="actions">
-                <button className="btn btn-primary" onClick={() => setPage("review")}>
-                  Open queue
-                </button>
-              </div>
-            </section>
-            <section className="status-card">
-              <h2>Clio index</h2>
-              <p>Last refresh: {String(checkpoints.lastClioIndexRefresh ?? "—")}</p>
-              <p>Matters: {matters.length}</p>
-              <div className="actions">
-                <button
-                  className="btn"
-                  onClick={() => void window.mattermail.refreshClioIndex().then(() => refreshAll())}
-                >
-                  Refresh
-                </button>
-              </div>
-            </section>
-            <section className="status-card">
-              <h2>AI</h2>
-              <p>{String(aiConfig.profileName ?? "Demo Mock Provider")}</p>
-              <p className="muted">{String(aiConfig.matchingModelId)}</p>
-              <div className="actions">
-                <button className="btn" onClick={() => setPage("settings")}>
-                  Open Settings
-                </button>
-              </div>
-            </section>
-            <section className="status-card">
-              <h2>Review</h2>
-              <p>Waiting: {items.filter((i) => i.reviewStatus === "unreviewed").length}</p>
-              <p>Matter unknown: {items.filter((i) => i.reviewStatus === "matter_unknown").length}</p>
-              <div className="actions">
-                <button className="btn btn-primary" onClick={() => setPage("review")}>
-                  Begin Rapid Review
-                </button>
-              </div>
-            </section>
-            <section className="status-card">
-              <h2>Staged</h2>
-              <p>Approved not committed: {Number(checkpoints.approvedNotCommitted ?? staged.length)}</p>
-              <div className="actions">
-                <button className="btn btn-primary" onClick={() => setPage("staged")}>
-                  Review and Commit
-                </button>
-              </div>
-            </section>
-            <section className="status-card">
-              <h2>Audit</h2>
-              <p>Last Drive upload: {String(checkpoints.lastDriveAuditUpload ?? "—")}</p>
-              <p>Last Clio commit: {String(checkpoints.lastClioCommit ?? "—")}</p>
-            </section>
-          </div>
-        </div>
+        <HomePage
+          unreviewedCount={items.filter((i) => i.reviewStatus === "unreviewed").length}
+          stagedCount={Number(checkpoints.approvedNotCommitted ?? staged.length)}
+          matterUnknownCount={items.filter((i) => i.reviewStatus === "matter_unknown").length}
+          questWaitingCount={items.filter((i) => i.isQuest).length}
+          matterCount={matters.length}
+          checkpoints={checkpoints}
+          aiConfig={aiConfig}
+          onBeginReview={() => setPage("review")}
+          onOpenStaged={() => setPage("staged")}
+          onOpenSettings={() => setPage("settings")}
+          onScan={(w) => void window.mattermail.scanGmail(w).then(() => refreshAll())}
+          onRefreshClio={() =>
+            void window.mattermail.refreshClioIndex().then(() => refreshAll())
+          }
+        />
       )}
 
       {page === "review" && selected && (
@@ -402,23 +344,19 @@ export function App() {
                 <header>Queue</header>
                 <div className="queue-list">
                   {items.map((item) => (
-                    <button
+                    <QueueRow
                       key={item.id}
-                      className={`queue-row ${selected.id === item.id ? "active" : ""}`}
-                      onClick={() => {
+                      subject={item.subject}
+                      fromName={item.fromName}
+                      isQuest={item.isQuest}
+                      confidence={item.confidence}
+                      reviewStatus={item.reviewStatus}
+                      active={selected.id === item.id}
+                      onSelect={() => {
                         setSelectedId(item.id);
                         setChosenMatterId(null);
                       }}
-                    >
-                      <div className="subject">{item.subject}</div>
-                      <div className="meta">
-                        {item.fromName} · {item.isQuest ? "Quest" : "Gmail"} ·{" "}
-                        <span className={`tag ${item.confidence.toLowerCase()}`}>
-                          {item.confidence}
-                        </span>{" "}
-                        · {item.reviewStatus}
-                      </div>
-                    </button>
+                    />
                   ))}
                 </div>
               </div>
@@ -518,65 +456,25 @@ export function App() {
 
               <div className="panel">
                 <header>Matter & proposal</header>
-                <div className="matter-panel">
-                  {proposedMatter ? (
-                    <div className="matter-card selected">
-                      <strong>{proposedMatter.clientName}</strong>
-                      <div>{proposedMatter.displayNumber}</div>
-                      <div className="muted">
-                        {proposedMatter.court} · {proposedMatter.county} · {proposedMatter.status}
-                      </div>
-                      <div className={`tag ${selected.confidence.toLowerCase()}`}>
-                        {selected.confidence}
-                      </div>
-                      <ul>
-                        {selected.evidence.map((e) => (
-                          <li key={e}>{e}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <p className="muted">No reliable matter proposal</p>
+                <MatterProposal
+                  matter={proposedMatter}
+                  confidence={selected.confidence}
+                  evidence={selected.evidence}
+                  isAlternate={Boolean(
+                    chosenMatterId && chosenMatterId !== selected.proposedMatterId,
                   )}
-
-                  <label>
-                    Matter search
-                    <input
-                      className="search-box"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Type at least 3 characters"
-                    />
-                  </label>
-                  {searchHits.length > 0 && (
-                    <ul className="search-results">
-                      {searchHits.map((h) => (
-                        <li key={String(h.matterId)}>
-                          <button
-                            onClick={() => {
-                              const m = matters.find((x) => x.id === h.matterId);
-                              if (m) setChosenMatterId(m.clioMatterId);
-                              setSearch("");
-                              setSearchHits([]);
-                            }}
-                          >
-                            <strong>{String(h.clientName)}</strong> · {String(h.displayNumber)}
-                            <div className="muted">{String(h.matchWhy)}</div>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input
-                      type="checkbox"
-                      checked={remember}
-                      onChange={(e) => setRemember(e.target.checked)}
-                    />
-                    Remember this decision
-                  </label>
-                </div>
+                  search={search}
+                  onSearchChange={setSearch}
+                  searchHits={searchHits}
+                  onPickSearchHit={(matterLocalId) => {
+                    const m = matters.find((x) => x.id === matterLocalId);
+                    if (m) setChosenMatterId(m.clioMatterId);
+                    setSearch("");
+                    setSearchHits([]);
+                  }}
+                  remember={remember}
+                  onRememberChange={setRemember}
+                />
               </div>
             </div>
           </div>
