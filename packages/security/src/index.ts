@@ -20,3 +20,14 @@ export {
   assertNoSilentFallback,
   assertExactModelRecorded,
 } from "./ai-guard.js";
+export {
+  runOAuthLoopback,
+  exchangeAuthorizationCode,
+  refreshAccessToken,
+  createPkcePair,
+} from "./oauth-loopback.js";
+export { SecretStore, maskSecret, type SecretStoreCrypto } from "./secret-store.js";
+export type {
+  OAuthLoopbackOptions,
+  OAuthLoopbackResult,
+} from "./oauth-loopback.js";

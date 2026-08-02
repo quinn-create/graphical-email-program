@@ -12,6 +12,8 @@ const allowedChannels = [
   "matters:list",
   "staged:list",
   "commit:run",
+  "commit:preflight",
+  "commit:lastRun",
   "ai:listModels",
   "ai:getConfig",
   "ai:setConfig",
@@ -23,6 +25,10 @@ const allowedChannels = [
   "learning:list",
   "clio:refreshIndex",
   "safety:selfCheck",
+  "connectors:status",
+  "connectors:saveCredentials",
+  "connectors:connect",
+  "connectors:disconnect",
 ] as const;
 
 type Channel = (typeof allowedChannels)[number];
@@ -47,6 +53,9 @@ const api = {
   listMatters: () => invoke("matters:list"),
   listStaged: () => invoke("staged:list"),
   commit: (stagedIds: string[]) => invoke("commit:run", stagedIds),
+  commitPreflight: (stagedIds?: string[]) =>
+    invoke("commit:preflight", { stagedIds }),
+  lastCommitRun: () => invoke("commit:lastRun"),
   listModels: () => invoke("ai:listModels"),
   getAiConfig: () => invoke("ai:getConfig"),
   setAiConfig: (cfg: Record<string, unknown>) => invoke("ai:setConfig", cfg),
@@ -58,6 +67,13 @@ const api = {
   listLearningRules: () => invoke("learning:list"),
   refreshClioIndex: () => invoke("clio:refreshIndex"),
   safetySelfCheck: () => invoke("safety:selfCheck"),
+  connectorsStatus: () => invoke<Record<string, unknown>>("connectors:status"),
+  saveConnectorCredentials: (creds: Record<string, string>) =>
+    invoke("connectors:saveCredentials", creds),
+  connectConnector: (id: "gmail" | "clio" | "drive") =>
+    invoke("connectors:connect", { id }),
+  disconnectConnector: (id: "gmail" | "clio" | "drive") =>
+    invoke("connectors:disconnect", { id }),
 };
 
 contextBridge.exposeInMainWorld("mattermail", api);

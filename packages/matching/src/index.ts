@@ -249,6 +249,48 @@ function buildExplanation(cr: CaseRelatedness, ranked: RankedCandidate[]): strin
   return `Top candidate score ${top.score} (${top.confidence}) with ${top.evidence.length} evidence item(s).`;
 }
 
+/** One-line queue summary for Rapid Review. */
+export function oneLineWhy(match: Pick<MatchResult, "caseRelatedness" | "candidates" | "topConfidence">): string {
+  if (match.caseRelatedness === "NEVER") return "Not case-related";
+  const top = match.candidates[0];
+  if (!top) return "Needs matter review";
+  const tip = top.evidence[0]?.explanation;
+  if (tip) {
+    const short = tip.length > 72 ? `${tip.slice(0, 69)}…` : tip;
+    return short;
+  }
+  if (match.topConfidence === "HIGH") return "Strong matter match";
+  if (match.topConfidence === "MEDIUM") return "Likely matter match";
+  return "Weak matter signal";
+}
+
+const CONFIDENCE_RANK: Record<string, number> = {
+  HIGH: 0,
+  MEDIUM: 1,
+  LOW: 2,
+  NONE: 3,
+};
+
+/** Sort review items: unreviewed first, then HIGH→LOW confidence, then date. */
+export function sortReviewQueue<T extends {
+  reviewStatus: string;
+  confidence: string;
+  date?: string;
+  isQuest?: boolean;
+}>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const aOpen = a.reviewStatus === "unreviewed" ? 0 : 1;
+    const bOpen = b.reviewStatus === "unreviewed" ? 0 : 1;
+    if (aOpen !== bOpen) return aOpen - bOpen;
+    const ca = CONFIDENCE_RANK[a.confidence] ?? 9;
+    const cb = CONFIDENCE_RANK[b.confidence] ?? 9;
+    if (ca !== cb) return ca - cb;
+    // Quest slightly ahead within same confidence (time-sensitive)
+    if (Boolean(a.isQuest) !== Boolean(b.isQuest)) return a.isQuest ? -1 : 1;
+    return String(b.date ?? "").localeCompare(String(a.date ?? ""));
+  });
+}
+
 /** Propose safe learning rules after approval — never activate without user. */
 export function proposeSafeLearningRules(input: {
   senderEmail?: string;
