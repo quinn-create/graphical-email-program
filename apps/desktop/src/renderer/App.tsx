@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { ReviewActionBar, type ReviewBarAction } from "./components/ReviewActionBar";
 
 type Page = "home" | "review" | "staged" | "rules" | "settings" | "setup";
 
@@ -71,6 +72,11 @@ export function App() {
     [items, selectedId],
   );
 
+  const systemProposedMatter = useMemo(() => {
+    if (!selected?.proposedMatterId) return null;
+    return matters.find((m) => m.clioMatterId === selected.proposedMatterId) ?? null;
+  }, [matters, selected]);
+
   const proposedMatter = useMemo(() => {
     const id = chosenMatterId ?? selected?.proposedMatterId;
     return matters.find((m) => m.clioMatterId === id) ?? null;
@@ -125,7 +131,7 @@ export function App() {
     setPage("home");
   }
 
-  async function doAction(action: string, matterId?: string) {
+  async function doAction(action: ReviewBarAction | string, matterId?: string) {
     if (!selected) return;
     const res = (await window.mattermail.reviewAction({
       itemId: selected.id,
@@ -574,42 +580,16 @@ export function App() {
               </div>
             </div>
           </div>
-          <div className="action-bar">
-            <button
-              className="btn btn-yes"
-              onClick={() => void doAction("approve", proposedMatter?.clioMatterId)}
-              disabled={!proposedMatter}
-            >
-              Yes — use proposed matter
-            </button>
-            <button
-              className="btn"
-              onClick={() => void doAction("choose", chosenMatterId ?? proposedMatter?.clioMatterId)}
-            >
-              Choose different matter
-            </button>
-            <button className="btn" onClick={() => void doAction("unknown")}>
-              Case-related — matter unknown
-            </button>
-            <button className="btn" onClick={() => void doAction("not_related")}>
-              Not case-related
-            </button>
-            <button className="btn" onClick={() => void doAction("later")}>
-              Review later
-            </button>
-            <button className="btn" onClick={() => void doAction("duplicate")}>
-              Duplicate / already logged
-            </button>
-            <button className="btn" onClick={() => void doAction("split")}>
-              Split email or attachments
-            </button>
-            <button className="btn" onClick={() => void doAction("analyze")}>
-              Analyze with AI
-            </button>
-            <button className="btn" onClick={() => void doAction("undo")}>
-              Undo last decision
-            </button>
-          </div>
+          <ReviewActionBar
+            canApprove={Boolean(systemProposedMatter)}
+            hasAlternateMatter={Boolean(
+              chosenMatterId && chosenMatterId !== selected.proposedMatterId,
+            )}
+            canUndo
+            approveMatterId={systemProposedMatter?.clioMatterId}
+            chooseMatterId={chosenMatterId ?? systemProposedMatter?.clioMatterId}
+            onAction={(action, matterId) => void doAction(action, matterId)}
+          />
         </>
       )}
 
